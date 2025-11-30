@@ -1,0 +1,75 @@
+# --------------------------------------------------
+# Climate ResQ-Agent: Notebook Starter
+# --------------------------------------------------
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, mean_squared_error
+
+# ---------------------------------------------
+# 1. Load Dataset
+# ---------------------------------------------
+df = pd.read_csv("/kaggle/input/climate-data/rainfall_windspeed.csv")
+df.head()
+
+# ---------------------------------------------
+# 2. Preprocessing
+# ---------------------------------------------
+scaler = StandardScaler()
+scaled = scaler.fit_transform(df[['rainfall', 'windspeed', 'humidity']])
+
+# ---------------------------------------------
+# 3. Train Hazard Escalation Model
+# ---------------------------------------------
+X = scaled
+y = df['hazard_level']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+model = GradientBoostingRegressor()
+model.fit(X_train, y_train)
+
+preds = model.predict(X_test)
+
+print("MSE:", mean_squared_error(y_test, preds))
+
+# ---------------------------------------------
+# 4. Risk Prioritization
+# ---------------------------------------------
+df['risk_score'] = (
+    df['rainfall']*0.4 + 
+    df['windspeed']*0.3 +
+    df['population_density']*0.3
+)
+
+df.sort_values('risk_score', ascending=False).head()
+
+# ---------------------------------------------
+# 5. Visualization
+# ---------------------------------------------
+plt.figure(figsize=(8,5))
+sns.histplot(df['risk_score'])
+plt.title("Risk Score Distribution")
+plt.show()
+
+# ---------------------------------------------
+# 6. Generate Action Plans (LLM placeholder)
+# ---------------------------------------------
+def generate_action_plan(zone, score):
+    return f"""
+    Zone: {zone}
+    Risk Score: {score}
+
+    Recommended Actions:
+    - Deploy rescue teams
+    - Set up temporary shelters
+    - Broadcast evacuation alerts
+    - Mobilize medical units
+    """
+
+df.apply(lambda row: generate_action_plan(row['zone'], row['risk_score']), axis=1)
